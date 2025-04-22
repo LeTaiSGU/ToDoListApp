@@ -31,7 +31,6 @@ def read_todos(db: Session = Depends(get_db)):
     redis_client.set("todos", json.dumps([{
         "id": todo.id,
         "title": todo.title,
-        "description": todo.description,
         "completed": todo.completed,
         "image_path": todo.image_path
     } for todo in todos]), ex=300)  # Cache for 5 minutes
@@ -41,7 +40,6 @@ def read_todos(db: Session = Depends(get_db)):
 @router.post("/", response_model=TodoOut)
 async def create_todo(
     title: str = Form(...),
-    description: Optional[str] = Form(None),
     image: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db)
 ):
@@ -53,7 +51,6 @@ async def create_todo(
     # Create todo with image path
     todo_data = {
         "title": title,
-        "description": description,
         "image_path": image_path
     }
     
@@ -68,30 +65,36 @@ async def create_todo(
 async def update_todo(
     todo_id: int,
     title: Optional[str] = Form(None),
-    description: Optional[str] = Form(None),
     completed: Optional[bool] = Form(None),
     image: Optional[UploadFile] = File(None),
+    remove_image: Optional[bool] = Form(False),
     db: Session = Depends(get_db)
 ):
-    # Get current todo
+    # Lấy todo hiện tại
     current_todo = crud.get_todo(db, todo_id)
     
-    # Handle file upload if provided
+    # Xử lý hình ảnh
     image_path = current_todo.image_path
-    if image:
-        image_path = await save_upload_file(image)
     
-    # Update todo with image path
+    # Trường hợp 1: Xóa hình ảnh
+    if remove_image:
+        image_path = None
+    # Trường hợp 2: Thay thế bằng hình ảnh mới
+    elif image:
+        # Tải lên hình ảnh mới
+        image_path = await save_upload_file(image)
+    # Trường hợp 3: Giữ nguyên hình ảnh hiện tại (không làm gì với image_path)
+    
+    # Cập nhật todo với đường dẫn hình ảnh
     todo_data = {
         "title": title if title is not None else current_todo.title,
-        "description": description if description is not None else current_todo.description,
         "completed": completed if completed is not None else current_todo.completed,
         "image_path": image_path
     }
     
     updated_todo = crud.update_todo(db, todo_id, todo_data)
     
-    # Invalidate cache
+    # Xóa bỏ cache
     redis_client.delete("todos")
     
     return updated_todo
