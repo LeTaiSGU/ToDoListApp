@@ -2,7 +2,6 @@ from pydantic import BaseModel
 
 class TodoBase(BaseModel):
     title: str
-    description: str | None = None
     image_path: str | None = None
     completed: bool = False
 
@@ -17,7 +16,6 @@ class TodoUpdate(TodoBase):
 class TodoOut(TodoBase):
     id: int
     title: str
-    description: str | None = None
     completed: bool
     image_path: str | None = None
 

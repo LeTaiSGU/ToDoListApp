@@ -19,16 +19,29 @@ def create_todo(db: Session, todo_data: dict):
 def update_todo(db: Session, todo_id: int, data: dict):
     todo = db.query(Todo).filter(Todo.id == todo_id).first()
     
-    # Nếu cập nhật hình ảnh mới, xóa hình ảnh cũ (nếu có)
-    if 'image_path' in data and data['image_path'] != todo.image_path and todo.image_path:
-        try:
-            if os.path.exists(todo.image_path):
-                os.remove(todo.image_path)
-        except Exception as e:
-            print(f"Lỗi khi xóa file cũ: {e}")
+    # Xử lý thay đổi đường dẫn hình ảnh
+    if 'image_path' in data:
+        # Trường hợp 1: Hình ảnh đang bị xóa
+        if data['image_path'] is None and todo.image_path:
+            try:
+                if os.path.exists(todo.image_path):
+                    os.remove(todo.image_path)
+                # Đặt đường dẫn hình ảnh thành None
+                data['image_path'] = None
+            except Exception as e:
+                print(f"Lỗi khi xóa tệp hình ảnh: {e}")
+        # Trường hợp 2: Hình ảnh đang được thay thế
+        elif data['image_path'] != todo.image_path and todo.image_path:
+            try:
+                if os.path.exists(todo.image_path):
+                    os.remove(todo.image_path)
+            except Exception as e:
+                print(f"Lỗi khi xóa tệp hình ảnh cũ: {e}")
     
+    # Cập nhật các trường của todo
     for key, value in data.items():
         setattr(todo, key, value)
+    
     db.commit()
     return todo
 

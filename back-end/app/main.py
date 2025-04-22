@@ -8,10 +8,6 @@ from pathlib import Path
 # Create uploads directory if it doesn't exist
 Path("uploads").mkdir(exist_ok=True)
 
-# Xóa và tạo lại DB (chỉ dùng trong môi trường phát triển)
-Base.metadata.drop_all(bind=engine)
-Base.metadata.create_all(bind=engine)
-
 app = FastAPI()
 
 # Mount the static files directory
